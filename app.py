@@ -11,19 +11,22 @@ STORY_WIDTH=1080
 STORY_HEIGHT=1920
 FONT_PATH='/Users/danblustein/Desktop/BIZ_UDPMincho/BIZUDPMincho-Regular.ttf'
 
-WORD_FONT_SIZE=200
-FURIGANA_FONT_SIZE=50
+DEFAULT_WORD_FONT_SIZE=200
+LONG_WORD_FONT_SIZE=150
+FURIGANA_FONT_SIZE=60
+MEANING_FONT_SIZE=75
+SENTENCE_FONT_SIZE=75
 
 IMAGE_MODE='RGB'
 BACKGROUND_COLOR=(240,240,240)
 BLACK_RGB=(0,0,0)
 
 class Word(object):
-    def __init__(self, word, furigana, meaning, romaji):
+    def __init__(self, word, furigana, meaning, sentence):
         self.word = word
         self.furigana = furigana
         self.meaning = meaning
-        self.romaji = romaji
+        self.sentence = sentence
 
 def instagramPostImageGenerator():
     pass
@@ -33,14 +36,14 @@ def instagramStoryImageGenerator(wordObject: Word):
     word = wordObject.word
     furigana = wordObject.furigana
     meaning = wordObject.meaning
-    romaji = wordObject.romaji
-
+    sentence = wordObject.sentence
 
     img = Image.new(IMAGE_MODE, (STORY_WIDTH, STORY_HEIGHT), color = BACKGROUND_COLOR)
     imgDraw = ImageDraw.Draw(img)
 
     # Related to the kanji at hand
-    wordFont = ImageFont.truetype(FONT_PATH, WORD_FONT_SIZE)
+    wordFontSize = DEFAULT_WORD_FONT_SIZE if len(word) < 7 else LONG_WORD_FONT_SIZE 
+    wordFont = ImageFont.truetype(FONT_PATH, wordFontSize)
     word_w, word_h = imgDraw.textsize(word, font=wordFont)
     wordWidthPlacement = (STORY_WIDTH-word_w)/2
     wordHeightPlacement = (STORY_HEIGHT-word_h)/3
@@ -55,22 +58,33 @@ def instagramStoryImageGenerator(wordObject: Word):
     furiganaPlacement = (furiganaWidthPlacement, furiganaHeightPlacement)
     imgDraw.text(furiganaPlacement, furigana, fill=BLACK_RGB, font=furiganaFont)
 
+    # Related to it's meaning in English
+    meaningFont = ImageFont.truetype(FONT_PATH, MEANING_FONT_SIZE)
+    meaning_w, meaning_h = imgDraw.textsize(meaning, font=meaningFont)
+    meaningWidthPlacement = (STORY_WIDTH-meaning_w)/2
+    meaningHeightPlacement = furiganaHeightPlacement + 150
+    meaningPlacement = (meaningWidthPlacement, meaningHeightPlacement)
+    imgDraw.text(meaningPlacement, meaning, fill=BLACK_RGB, font=meaningFont)
+
+    # Related to the sentence that uses the word in question
+    sentenceFont = ImageFont.truetype(FONT_PATH, SENTENCE_FONT_SIZE)
+    sentence_w, sentence_h = imgDraw.textsize(sentence, font=sentenceFont)
+    sentenceWidthPlacement = (STORY_WIDTH-sentence_w)/2
+    sentenceHeightPlacement = meaningHeightPlacement + 150
+    sentencePlacement = (sentenceWidthPlacement, sentenceHeightPlacement)
+    imgDraw.text(sentencePlacement, sentence, fill=BLACK_RGB, font=sentenceFont)
+
+
     # Saving the Image
     img.save("story.png", "PNG")
 
 def __instagramImageGenerator():
     pass
 
-def getSentenceFromWord(wordObject: Word) -> str:
+def getSentenceFromWord(word: str) -> str:
     # Docs - https://jotoba.de/docs.html#post-/api/search/sentences
-
-    word = wordObject.word
-    furigana = wordObject.furigana
-    meaning = wordObject.meaning
-    romaji = wordObject.romaji
-
     url = 'https://jotoba.de/api/search/sentences'
-    body = {'querry': word}
+    body = {'query': word}
     response = requests.post(url, json=body)
     
     if response.status_code != 200:
@@ -82,7 +96,7 @@ def getSentenceFromWord(wordObject: Word) -> str:
     if noSentencesExistForWord:
         raise Exception(f'Sentence does not exist for word {word}')
     else:
-        firstSentence = json['sentences'][0]['furigana']
+        firstSentence = json['sentences'][0]['content']
         return firstSentence
 
 def randomN1Word() -> Word:
@@ -100,7 +114,8 @@ def __randomWord(file_name: str) -> Word:
     word = wordObject['word']
     furigana = wordObject['furigana']
     meaning = wordObject['meaning']
-    romaji = wordObject['romaji']
-    return Word(word, furigana, meaning, romaji)
+    sentence = getSentenceFromWord(word)
+
+    return Word(word, furigana, meaning, sentence)
 
 instagramStoryImageGenerator(randomN1Word())
