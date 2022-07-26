@@ -1,6 +1,7 @@
 from re import S
 import requests
 import json
+import textwrap
 from random import randrange
 from PIL import Image, ImageFont, ImageDraw, ImageColor
 
@@ -9,13 +10,15 @@ N2_VOCAB_FILE='n2_word_set.json'
 
 STORY_WIDTH=1080
 STORY_HEIGHT=1920
-FONT_PATH='/Users/danblustein/Desktop/BIZ_UDPMincho/BIZUDPMincho-Regular.ttf'
+FONT_PATH='/Users/danblustein/Desktop/folderlol/BIZUDPMincho-Regular.ttf'
 
 DEFAULT_WORD_FONT_SIZE=200
 LONG_WORD_FONT_SIZE=150
 FURIGANA_FONT_SIZE=60
 MEANING_FONT_SIZE=75
 SENTENCE_FONT_SIZE=75
+MAX_NUM_OF_EN_CHARS_PER_LINE=20
+MAX_NUM_OF_JP_CHARS_PER_LINE=12
 
 IMAGE_MODE='RGB'
 BACKGROUND_COLOR=(240,240,240)
@@ -60,20 +63,23 @@ def instagramStoryImageGenerator(wordObject: Word):
 
     # Related to it's meaning in English
     meaningFont = ImageFont.truetype(FONT_PATH, MEANING_FONT_SIZE)
-    meaning_w, meaning_h = imgDraw.textsize(meaning, font=meaningFont)
-    meaningWidthPlacement = (STORY_WIDTH-meaning_w)/2
     meaningHeightPlacement = furiganaHeightPlacement + 150
-    meaningPlacement = (meaningWidthPlacement, meaningHeightPlacement)
-    imgDraw.text(meaningPlacement, meaning, fill=BLACK_RGB, font=meaningFont)
+    meaningLines = textwrap.wrap(meaning, width=MAX_NUM_OF_EN_CHARS_PER_LINE)
+    for meaningLine in meaningLines:
+        width, height = imgDraw.textsize(meaningLine, font=meaningFont)
+        meaningLinePlacement = ((STORY_WIDTH - width)/2, meaningHeightPlacement)
+        imgDraw.text(meaningLinePlacement, meaningLine, fill=BLACK_RGB, font=meaningFont)
+        meaningHeightPlacement += 100
 
     # Related to the sentence that uses the word in question
     sentenceFont = ImageFont.truetype(FONT_PATH, SENTENCE_FONT_SIZE)
-    sentence_w, sentence_h = imgDraw.textsize(sentence, font=sentenceFont)
-    sentenceWidthPlacement = (STORY_WIDTH-sentence_w)/2
-    sentenceHeightPlacement = meaningHeightPlacement + 150
-    sentencePlacement = (sentenceWidthPlacement, sentenceHeightPlacement)
-    imgDraw.text(sentencePlacement, sentence, fill=BLACK_RGB, font=sentenceFont)
-
+    sentenceHeightPlacement = meaningHeightPlacement + 50
+    sentenceLines = textwrap.wrap(sentence, width=MAX_NUM_OF_JP_CHARS_PER_LINE)
+    for sentenceLine in sentenceLines:
+        width, height = imgDraw.textsize(sentenceLine, font=sentenceFont)
+        sentenceLinePlacement = ((STORY_WIDTH - width)/2, sentenceHeightPlacement)
+        imgDraw.text(sentenceLinePlacement, sentenceLine, fill=BLACK_RGB, font=sentenceFont)
+        sentenceHeightPlacement += 100
 
     # Saving the Image
     img.save("story.png", "PNG")
